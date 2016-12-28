@@ -1,0 +1,195 @@
+---
+
+- name: Provision Wistar
+  hosts: localhost
+  vars:
+    ansible_ssh_user: juniper
+    ansible_ssh_pass: Juniper123
+    ansible_sudo_pass: Juniper123
+  connection: local
+  become: true
+
+  tasks:
+  - name: Install Junos-eznc dependancies
+    apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: true
+    with_items:
+      - build-essential
+      - libxml2-dev
+      - libxslt1-dev
+      - libz-dev
+      - libffi-dev
+      - libssl-dev
+      - python-dev
+      - git
+      - python-pip
+  
+  - name: Install python-cryptography
+    pip:
+      name: cryptography
+      editable: false
+  
+  - name: Install junos-eznc
+    pip:
+      name: junos-eznc
+      editable: false
+  
+  - name: Install jxmlease
+    pip:
+      name: jxmlease
+      editable: false
+  
+  - name: Install Wistar dependancies
+    apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: true
+    with_items:
+      - qemu-kvm
+      - libvirt-bin
+      - socat
+      - python-pexpect
+      - python-libvirt
+      - python-yaml
+      - unzip
+      - bridge-utils
+      - python-numpy
+      - genisoimage
+      - python-netaddr
+      - python-markupsafe
+      - python-setuptools
+  
+  - name: Install Django
+    pip:
+      name: django
+      version: 1.9.9
+      editable: false
+  
+  - name: Install Python virtualBox
+    pip:
+      name: pyvbox
+      editable: false
+
+  - name: Create Wistar directory structure 1
+    file:
+      path: /opt/wistar
+      state: directory
+  - name: Create Wistar directory structure 2
+    file:
+      path: /opt/wistar/user_images
+      state: directory
+  - name: Create Wistar directory structure 3
+    file:
+      path: /opt/wistar/wistar-app
+      state: directory
+  - name: Create Wistar directory structure 4
+    file:
+      path: /opt/wistar/media
+      state: directory
+  - name: Create Wistar directory structure 5
+    file:
+      path: /opt/wistar/seeds
+      state: directory
+  - name: Create Wistar directory structure 6
+    file:
+      path: /opt/wistar/user_images/instances
+      state: directory
+
+  - name: Pull latest Wistar from Git
+    git:
+      repo: https://github.com/Juniper/wistar
+      depth: 1
+      dest: /opt/wistar/wistar-app/
+
+  - name: Set up Wistar to run at boot (HACK)
+    lineinfile:
+      create: no
+      dest: /etc/rc.local
+      insertbefore: exit 0
+      line: /opt/wistar/wistar-app/manage.py runserver 0.0.0.0:80 >>/var/log/wistar-stdout.log 2>&1 &
+  
+  - name: Create Wistar tables
+    command: /opt/wistar/wistar-app/manage.py migrate
+
+  - name: Set up network interfaces
+    template:
+      src: templates/interfaces
+      dest: /etc/network/interfaces
+  
+  - name: Create login banner
+    template:
+      src: templates/issue
+      dest: /etc/issue
+  
+  - name: Create juniper user .ssh directory
+    file:
+      path: /home/juniper/.ssh
+      state: directory
+      mode: 0700
+      owner: juniper
+      group: juniper
+
+  - name: Setup SSH config
+    template:
+      src: templates/ssh_config
+      dest: /home/juniper/.ssh/config
+      mode: 0400
+      owner: juniper
+      group: juniper
+  
+  - name: Setup SSH keys 
+    shell: ssh-keygen -t rsa  -q -f /home/juniper/.ssh/id_rsa -N ""
+    become_user: juniper
+ 
+  - name: Register SSH key
+    shell: cat /home/juniper/.ssh/id_rsa.pub
+    register: public_key
+    become_user: juniper
+
+  - name: Set SSH key in wistar configuration
+    lineinfile:
+      dest: /opt/wistar/wistar-app/wistar/configuration.py
+      regexp: "^ssh_key"
+      line: 'ssh_key = "{{ public_key.stdout }}"'
+ 
+  - name: Start cleaning up! Removing build packages
+    apt:
+      name: "{{ item }}"
+      state: absent
+      purge: yes
+      install_recommends: no
+    with_items:
+      - build-essential
+      - libxml2-dev
+      - libxslt1-dev
+      - libz-dev
+      - libffi-dev
+      - libssl-dev
+      - python-dev
+      - linux-firmware
+      - linux-image-generic
+      - linux-generic
+
+  - name: Run apt-get autoremove
+    command: apt-get -y autoremove
+
+  - name: Remove old apt archives
+    shell: rm -rf /var/cache/apt/archives/* || exit 0
+
+  - name: Remove old apt binary cache
+    shell: rm -rf /var/cache/apt/*bin || exit 0
+
+  - name: Remove old log files
+    shell: rm -rf /var/log/*log || exit 0
+
+  - name: Remove old tmp files
+    shell: rm -rf /var/tmp/* || exit 0
+
+  - name: Fill up and empty disk
+    shell: dd if=/dev/zero of=/EMPTY bs=1M || rm -r /EMPTY
+
+  - name: Sync and Done
+    command: sync
+

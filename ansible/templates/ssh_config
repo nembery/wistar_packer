@@ -1,0 +1,9 @@
+Host * 
+    StrictHostKeyChecking no
+    VisualHostKey yes
+    UserKnownHostsFile=/dev/null
+
+Host 192.168.122.*
+    StrictHostKeyChecking no
+    VisualHostKey yes
+    UserKnownHostsFile=/dev/null
