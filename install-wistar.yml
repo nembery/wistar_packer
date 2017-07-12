@@ -153,6 +153,12 @@
       dest: /opt/wistar/wistar-app/wistar/configuration.py
       regexp: "^ssh_key"
       line: 'ssh_key = "{{ public_key.stdout }}"'
+  
+  - name: Set SSH user in wistar configuration
+    lineinfile:
+      dest: /opt/wistar/wistar-app/wistar/configuration.py
+      regexp: "^ssh_user"
+      line: 'ssh_user = "juniper"
  
   - name: Start cleaning up! Removing build packages
     apt:
