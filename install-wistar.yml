@@ -3,9 +3,9 @@
 - name: Provision Wistar
   hosts: localhost
   vars:
-    ansible_ssh_user: juniper
-    ansible_ssh_pass: Juniper123
-    ansible_sudo_pass: Juniper123
+    ansible_ssh_user: wistar
+    ansible_ssh_pass: Wistar123
+    ansible_sudo_pass: Wistar123
   connection: local
   become: true
 
@@ -99,7 +99,7 @@
 
   - name: Pull latest Wistar from Git
     git:
-      repo: https://github.com/Juniper/wistar
+      repo: https://github.com/nembery/wistar
       depth: 1
       dest: /opt/wistar/wistar-app/
 
@@ -123,30 +123,30 @@
       src: templates/issue
       dest: /etc/issue
   
-  - name: Create juniper user .ssh directory
+  - name: Create wistar user .ssh directory
     file:
-      path: /home/juniper/.ssh
+      path: /home/wistar/.ssh
       state: directory
       mode: 0700
-      owner: juniper
-      group: juniper
+      owner: wistar
+      group: wistar
 
   - name: Setup SSH config
     template:
       src: templates/ssh_config
-      dest: /home/juniper/.ssh/config
+      dest: /home/wistar/.ssh/config
       mode: 0400
-      owner: juniper
-      group: juniper
+      owner: wistar
+      group: wistar
   
   - name: Setup SSH keys 
-    shell: ssh-keygen -t rsa  -q -f /home/juniper/.ssh/id_rsa -N ""
-    become_user: juniper
+    shell: ssh-keygen -t rsa  -q -f /home/wistar/.ssh/id_rsa -N ""
+    become_user: wistar
  
   - name: Register SSH key
-    shell: cat /home/juniper/.ssh/id_rsa.pub
+    shell: cat /home/wistar/.ssh/id_rsa.pub
     register: public_key
-    become_user: juniper
+    become_user: wistar
 
   - name: Set SSH key in wistar configuration
     lineinfile:
@@ -158,7 +158,7 @@
     lineinfile:
       dest: /opt/wistar/wistar-app/wistar/configuration.py
       regexp: "^ssh_user"
-      line: 'ssh_user = "juniper"'
+      line: 'ssh_user = "wistar"'
  
   - name: Start cleaning up! Removing build packages
     apt:

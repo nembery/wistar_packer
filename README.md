@@ -9,4 +9,4 @@ Requirements are
  - VMWare (tested on Fusion for Mac)
  - Ubuntu 16.04.1 ISO (it will be downloaded automatically if needed)
 
-send questions and comments to nembery@juniper.net
+send questions and comments to nembery@wistar.net
